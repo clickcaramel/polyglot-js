@@ -1,0 +1,14 @@
+{
+	"moduleFileExtensions": [
+		"ts",
+		"tsx",
+		"js"
+	],
+	"testMatch": [
+		"**/*.spec.(ts|tsx|js)"
+	],
+	"testTimeout": 30000,
+	"transform": {
+		".(ts|tsx)": "ts-jest"
+	}
+}

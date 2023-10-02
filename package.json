@@ -1,0 +1,43 @@
+{
+  "name": "@4spaces/polyglot",
+  "version": "0.1.0",
+  "description": "Tool that simplifies the localization process for your project",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "test": "jest",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/clickcaramel/polyglot-js.git"
+  },
+  "keywords": [
+    "i18n",
+    "translate",
+    "internationalization",
+    "internationalisation",
+    "localization",
+    "translation",
+    "ai"
+  ],
+  "author": "4spaces",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/clickcaramel/polyglot-js/issues"
+  },
+  "homepage": "https://github.com/clickcaramel/polyglot-js#readme",
+  "devDependencies": {
+    "@types/jest": "29.5.5",
+    "@types/node": "20.7.1",
+    "@typescript-eslint/eslint-plugin": "6.7.3",
+    "@typescript-eslint/parser": "6.7.3",
+    "eslint": "8.50.0",
+    "jest": "29.7.0",
+    "ts-jest": "29.1.1",
+    "typescript": "5.2.2"
+  }
+}
