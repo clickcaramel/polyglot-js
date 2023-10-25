@@ -53,20 +53,28 @@ export class PolyglotClient {
     this.logger.info('Initialization was successful!');
 
     if (config.preload) {
-      this.logger.info('Downloading translations from the server');
-      this.cacheFromDb = this.request(`products/${this.productId}/strings`)
-        .then((strings: CachedLocalisation[]) => {
-          this.logger.info(`Loaded translations for the ${strings.length} strings`);
-          return strings.reduce<Record<string, CachedLocalisation>>((acc, item) => {
-            acc[item.stringId as string] = item;
-            delete item.stringId;
-            return acc;
-          }, {});
-        })
-        .catch(
-          (e) => (this.logger.error('Failed to get translations.', e), {})
-        );
+      this.downloadTranslationsIfNeed();
     }
+  }
+
+  downloadTranslationsIfNeed() {
+    if (this.cacheFromDb !== undefined) {
+      return;
+    }
+
+    this.logger.info('Downloading translations from the server');
+    this.cacheFromDb = this.request(`products/${this.productId}/strings`)
+      .then((strings: CachedLocalisation[]) => {
+        this.logger.info(`Loaded translations for the ${strings.length} strings`);
+        return strings.reduce<Record<string, CachedLocalisation>>((acc, item) => {
+          acc[item.stringId as string] = item;
+          delete item.stringId;
+          return acc;
+        }, {});
+      })
+      .catch(
+        (e) => (this.logger.error('Failed to get translations.', e), {})
+      );
   }
 
   async hasTranslation(
@@ -95,7 +103,7 @@ export class PolyglotClient {
   async getTranslation(
     language: Language,
     stringId: string,
-  ): ReturnType<typeof PolyglotClient.prototype.doGetOrTranslate> {
+  ): Promise<string | undefined> {
     return this.doGetOrTranslate(false, language, stringId);
   }
 
@@ -104,7 +112,7 @@ export class PolyglotClient {
     initString: string,
     description: string | undefined,
     stringId = initString,
-  ): ReturnType<typeof PolyglotClient.prototype.doGetOrTranslate> {
+  ): Promise<string | undefined> {
     return this.doGetOrTranslate(
       true, language, initString, description, stringId
     );
