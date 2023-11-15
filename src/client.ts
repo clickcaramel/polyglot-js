@@ -112,9 +112,10 @@ export class PolyglotClient {
     initString: string,
     description: string | undefined,
     stringId = initString,
+    params?: TranslationParams
   ): Promise<string | undefined> {
     return this.doGetOrTranslate(
-      true, language, initString, description, stringId
+      true, language, initString, description, stringId, params
     );
   }
 
