@@ -34,6 +34,10 @@ export class PolyglotClient {
 
   async init(config: PolyglotConfig) {
     if (this.token) {
+      if (config.preload) {
+        this.downloadTranslationsIfNeed();
+      }
+
       return;
     }
 
@@ -57,7 +61,7 @@ export class PolyglotClient {
     }
   }
 
-  downloadTranslationsIfNeed() {
+  private downloadTranslationsIfNeed() {
     if (this.cacheFromDb !== undefined) {
       return;
     }
