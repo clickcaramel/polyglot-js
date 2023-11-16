@@ -1,6 +1,6 @@
 {
   "name": "@4spaces/polyglot",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Tool that simplifies the localization process for your project",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
