@@ -54,11 +54,11 @@ export class PolyglotClient {
       { languages: config.languages },
     );
 
-    this.logger.info('Initialization was successful!');
-
     if (config.preload) {
       this.downloadTranslationsIfNeed();
     }
+  
+    this.logger.info('Initialization was successful!');
   }
 
   private downloadTranslationsIfNeed() {
@@ -69,7 +69,7 @@ export class PolyglotClient {
     this.logger.info('Downloading translations from the server');
     this.cacheFromDb = this.request(`products/${this.productId}/strings`)
       .then((strings: CachedLocalisation[]) => {
-        this.logger.info(`Loaded translations for the ${strings.length} strings`);
+        this.logger.info(`Loaded translations for ${strings.length} strings`);
         return strings.reduce<Record<string, CachedLocalisation>>((acc, item) => {
           acc[item.stringId as string] = item;
           delete item.stringId;
@@ -77,7 +77,7 @@ export class PolyglotClient {
         }, {});
       })
       .catch(
-        (e) => (this.logger.error('Failed to get translations.', e), {})
+        (e) => (this.logger.error('Failed to get translations', e), {})
       );
   }
 
@@ -149,7 +149,7 @@ export class PolyglotClient {
   ): Promise<string | undefined> {
     const finalLanguage = this.languageAliases[language] ?? language;
 
-    if (needToTranslate && finalLanguage === this.baseLanguage) {
+    if (finalLanguage === this.baseLanguage) {
       return initString;
     }
 
@@ -185,7 +185,7 @@ export class PolyglotClient {
       }
 
       return translation ?? (baseStringAsFallback ? initString : undefined);
-    }
+  }
 
     this.logger.info(`Getting auto-translations for ${stringId}`);
 
