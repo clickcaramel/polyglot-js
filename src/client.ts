@@ -123,7 +123,7 @@ export class PolyglotClient {
     );
   }
 
-  private async getTranslationFromCache(
+  async getTranslationFromCache(
     language: Language,
     stringId: string,
   ): Promise<string | undefined> {
@@ -149,7 +149,7 @@ export class PolyglotClient {
   ): Promise<string | undefined> {
     const finalLanguage = this.languageAliases[language] ?? language;
 
-    if (finalLanguage === this.baseLanguage) {
+    if (needToTranslate && finalLanguage === this.baseLanguage) {
       return initString;
     }
 
