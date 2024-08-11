@@ -31,8 +31,9 @@ export class PolyglotClient {
   private cache: Record<string, CachedLocalisation> = {};
   private cacheFromDb!: Promise<Record<string, CachedLocalisation>>;
   private languageAliases!: Partial<Record<Language, Language>>;
+  private options?: RequestInit;
 
-  async init(config: PolyglotConfig) {
+  async init(config: PolyglotConfig, options?: RequestInit) {
     if (this.token) {
       if (config.preload) {
         this.downloadTranslationsIfNeed();
@@ -47,6 +48,7 @@ export class PolyglotClient {
     this.languages = new Set(config.languages);
     this.baseStringAsFallback = config.baseStringAsFallback ?? true;
     this.apiUrl = config.apiUrl ?? 'https://api.polyglot.rocks';
+    this.options = options;
 
     await this.request(
       `products/${this.productId}`,
@@ -57,7 +59,7 @@ export class PolyglotClient {
     if (config.preload) {
       this.downloadTranslationsIfNeed();
     }
-  
+
     this.logger.info('Initialization was successful!');
   }
 
@@ -216,7 +218,6 @@ export class PolyglotClient {
     path: string,
     method = 'GET',
     data?: Record<string, unknown>,
-    options?: RequestInit,
   ) {
     const ucMethod = method.toUpperCase();
     const defaultOptions: RequestInit = {
@@ -233,7 +234,7 @@ export class PolyglotClient {
 
     return fetch(
       `${this.apiUrl}/` + path,
-      options === undefined ? defaultOptions : Object.assign(defaultOptions, options)
+      this.options === undefined ? defaultOptions : Object.assign(defaultOptions, this.options)
     ).then(async (r) => {
       if (r.ok && r.status >= 200 && r.status < 400) {
         return r.json();
