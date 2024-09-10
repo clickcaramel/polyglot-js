@@ -15,6 +15,7 @@ export interface PolyglotConfig extends CommonParams {
   languageAliases?: Partial<Record<Language, Language>>,
   apiUrl?: string,
   cachePath?: string,
+  userAgent?: string,
 }
 
 export interface TranslationParams extends CommonParams {
@@ -36,9 +37,11 @@ export class PolyglotClient {
   private languageAliases!: Partial<Record<Language, Language>>;
   private options?: RequestInit;
   private cachePath: string = path.join(process.cwd(), 'polyglot-cache.json');
+  private userAgent?: string;
 
   async init(config: PolyglotConfig, options?: RequestInit) {
     this.cachePath = config.cachePath ?? this.cachePath;
+    this.userAgent = config.userAgent ?? `PolyglotClient/${config.productId}`;
 
     if (this.token) {
       if (config.preload) {
@@ -257,6 +260,7 @@ export class PolyglotClient {
       method,
       headers: {
         'Authorization': `Bearer ${this.token}`,
+        'User-Agent': this.userAgent ?? 'PolyglotClient',
       },
     };
 
