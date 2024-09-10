@@ -1,5 +1,7 @@
 import { Logger } from './logger';
 import { Localisation, Language, Translation } from './localisation';
+import * as fs from 'fs';
+import * as path from 'path';
 
 interface CommonParams {
   baseStringAsFallback?: boolean,
@@ -12,6 +14,7 @@ export interface PolyglotConfig extends CommonParams {
   preload?: boolean,
   languageAliases?: Partial<Record<Language, Language>>,
   apiUrl?: string,
+  cachePath?: string,
 }
 
 export interface TranslationParams extends CommonParams {
@@ -32,11 +35,14 @@ export class PolyglotClient {
   private cacheFromDb!: Promise<Record<string, CachedLocalisation>>;
   private languageAliases!: Partial<Record<Language, Language>>;
   private options?: RequestInit;
+  private cachePath: string = path.join(process.cwd(), 'polyglot-cache.json');
 
   async init(config: PolyglotConfig, options?: RequestInit) {
+    this.cachePath = config.cachePath ?? this.cachePath;
+
     if (this.token) {
       if (config.preload) {
-        this.downloadTranslationsIfNeed();
+        void this.downloadTranslationsIfNeed();
       }
 
       return;
@@ -50,37 +56,64 @@ export class PolyglotClient {
     this.apiUrl = config.apiUrl ?? 'https://api.polyglot.rocks';
     this.options = options;
 
-    await this.request(
-      `products/${this.productId}`,
-      'PUT',
-      { languages: config.languages },
-    );
+    if (!await this.checkDiskCache()) {
+      await this.request(
+        `products/${this.productId}`,
+        'PUT',
+        { languages: config.languages },
+      );
+    }
 
     if (config.preload) {
-      this.downloadTranslationsIfNeed();
+      void this.downloadTranslationsIfNeed();
     }
 
     this.logger.info('Initialization was successful!');
   }
 
-  private downloadTranslationsIfNeed() {
+  private async checkDiskCache(): Promise<boolean> {
+    try {
+      await fs.promises.access(this.cachePath, fs.constants.F_OK);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private async downloadTranslationsIfNeed() {
     if (this.cacheFromDb !== undefined) {
       return;
     }
 
-    this.logger.info('Downloading translations from the server');
-    this.cacheFromDb = this.request(`products/${this.productId}/strings`)
-      .then((strings: CachedLocalisation[]) => {
-        this.logger.info(`Loaded translations for ${strings.length} strings`);
-        return strings.reduce<Record<string, CachedLocalisation>>((acc, item) => {
-          acc[item.stringId as string] = item;
-          delete item.stringId;
-          return acc;
-        }, {});
+    this.logger.info('Checking for cached translations on disk');
+
+    this.cacheFromDb = fs.promises.readFile(this.cachePath, 'utf8')
+      .then((data) => {
+        this.logger.info('Loaded translations from disk cache');
+        return JSON.parse(data) as Record<string, CachedLocalisation>;
       })
-      .catch(
-        (e) => (this.logger.error('Failed to get translations', e), {})
-      );
+      .catch(() => {
+        this.logger.info('Downloading translations from the server');
+        return this.request(`products/${this.productId}/strings`)
+          .then((strings: CachedLocalisation[]) => {
+            this.logger.info(`Loaded translations for ${strings.length} strings`);
+
+            const cache = strings.reduce<Record<string, CachedLocalisation>>((acc, item) => {
+              acc[item.stringId as string] = item;
+              delete item.stringId;
+              return acc;
+            }, {});
+
+            fs.promises.writeFile(this.cachePath, JSON.stringify(cache))
+              .then(() => this.logger.info('Cache saved to disk'))
+              .catch((error) => this.logger.error('Failed to save cache to disk', error));
+
+            return cache;
+          })
+          .catch(
+            (e) => (this.logger.error('Failed to get translations', e), {})
+          );
+      });
   }
 
   async hasTranslation(
@@ -187,7 +220,7 @@ export class PolyglotClient {
       }
 
       return translation ?? (baseStringAsFallback ? initString : undefined);
-  }
+    }
 
     this.logger.info(`Getting auto-translations for ${stringId}`);
 

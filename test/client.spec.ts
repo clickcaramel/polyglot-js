@@ -1,5 +1,6 @@
 import { polyglotClient, PolyglotClient } from '../src/client';
 import { Language } from '../src/localisation';
+import fs from 'fs';
 
 const productId = 'test.ai.boost';
 
@@ -17,12 +18,18 @@ describe('PolyglotClient', () => {
   const apiUrl = 'https://api.dev.polyglot.rocks';
 
   beforeAll(async () => {
+    await Promise.all(fs.readdirSync('/tmp').map(async (file) => {
+      if (file.startsWith('polyglot-cache')) {
+        await fs.promises.unlink(`/tmp/${file}`);
+      }
+    }));
     await polyglotClient.init({
       token,
       productId,
       languages,
       languageAliases: { 'pt': 'pt-BR', },
       apiUrl,
+      cachePath: '/tmp/polyglot-cache-1.json',
     });
   });
 
@@ -32,6 +39,7 @@ describe('PolyglotClient', () => {
       token: 'NONE',
       productId,
       languages,
+      cachePath: '/tmp/polyglot-cache-2.json',
     })).rejects.toThrow();
   });
 
@@ -64,10 +72,21 @@ describe('PolyglotClient', () => {
       languages,
       preload: true,
       apiUrl,
+      cachePath: '/tmp/polyglot-cache-2.json',
     });
 
-    //@ts-expect-error
     expect(await testClient.getTranslationFromCache('ru', secStrId)).toBe('Поделиться');
+
+    const diskCacheClient = new PolyglotClient();
+    await diskCacheClient.init({
+      token,
+      productId,
+      languages,
+      preload: true,
+      apiUrl,
+      cachePath: '/tmp/polyglot-cache-2.json',
+    });
+    expect(await diskCacheClient.getTranslationFromCache('ru', secStrId)).toBe('Поделиться');
   });
 
   it('try to get the string that not translated yet', async () => {
