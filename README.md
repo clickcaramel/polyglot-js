@@ -11,3 +11,6 @@ npm i @4spaces/polyglot
 ## License
 
 Apache-2.0
+
+## Examples
+https://boost.pictures
