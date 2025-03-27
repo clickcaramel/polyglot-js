@@ -20,6 +20,7 @@ export interface PolyglotConfig extends CommonParams {
 
 export interface TranslationParams extends CommonParams {
   desiredMaxLength?: number,
+  mode?: 'sync' | 'async' | 'fast'
 }
 
 type CachedLocalisation = Omit<Localisation, 'stringId'> & { stringId?: string } ;
@@ -235,6 +236,7 @@ export class PolyglotClient {
           [this.baseLanguage]: initString,
         },
         description,
+        mode: params?.mode ?? 'sync',
       }
     ).catch(
       (e) => this.logger.error('Failed to get translation.', e)
