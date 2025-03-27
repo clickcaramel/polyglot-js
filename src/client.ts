@@ -18,9 +18,11 @@ export interface PolyglotConfig extends CommonParams {
   userAgent?: string,
 }
 
+export type TranslationMode = 'sync' | 'async' | 'fast';
+
 export interface TranslationParams extends CommonParams {
   desiredMaxLength?: number,
-  mode?: 'sync' | 'async' | 'fast'
+  mode?: TranslationMode
 }
 
 type CachedLocalisation = Omit<Localisation, 'stringId'> & { stringId?: string } ;
