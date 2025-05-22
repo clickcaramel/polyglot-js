@@ -7,6 +7,10 @@ interface CommonParams {
   baseStringAsFallback?: boolean,
 }
 
+export interface CacheOptions {
+  exclude?: string[],
+}
+
 export interface PolyglotConfig extends CommonParams {
   token: string,
   productId: string,
@@ -16,6 +20,7 @@ export interface PolyglotConfig extends CommonParams {
   apiUrl?: string,
   cachePath?: string,
   userAgent?: string,
+  cacheOptions?: CacheOptions,
 }
 
 export type TranslationMode = 'sync' | 'async' | 'fast';
@@ -48,7 +53,7 @@ export class PolyglotClient {
 
     if (this.token) {
       if (config.preload) {
-        void this.downloadTranslationsIfNeed();
+        void this.downloadTranslationsIfNeed(config.cacheOptions);
       }
 
       return;
@@ -71,7 +76,7 @@ export class PolyglotClient {
     }
 
     if (config.preload) {
-      void this.downloadTranslationsIfNeed();
+      void this.downloadTranslationsIfNeed(config.cacheOptions);
     }
 
     this.logger.info('Initialization was successful!');
@@ -86,7 +91,7 @@ export class PolyglotClient {
     }
   }
 
-  private async downloadTranslationsIfNeed() {
+  private async downloadTranslationsIfNeed(cacheOptions?: CacheOptions) {
     if (this.cacheFromDb !== undefined) {
       return;
     }
@@ -100,7 +105,12 @@ export class PolyglotClient {
       })
       .catch(() => {
         this.logger.info('Downloading translations from the server');
-        return this.request(`products/${this.productId}/strings`)
+
+        const query = cacheOptions?.exclude ?
+          new URLSearchParams({ exclude: cacheOptions.exclude.join(',') }).toString() :
+          undefined;
+
+        return this.request(`products/${this.productId}/strings${query ? `?${query}` : ''}`)
           .then((strings: CachedLocalisation[]) => {
             this.logger.info(`Loaded translations for ${strings.length} strings`);
 
