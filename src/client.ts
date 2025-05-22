@@ -107,7 +107,7 @@ export class PolyglotClient {
         this.logger.info('Downloading translations from the server');
 
         const query = cacheOptions?.exclude ?
-          new URLSearchParams({ exclude: cacheOptions.exclude.join(',') }).toString() :
+          cacheOptions.exclude.map((item) => `exclude=${item}`).join('&') :
           undefined;
 
         return this.request(`products/${this.productId}/strings${query ? `?${query}` : ''}`)
