@@ -1,4 +1,4 @@
-import { Logger } from './logger';
+import { Logger, LogLevel } from './logger';
 import { Localisation, Language, Translation } from './localisation';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -21,6 +21,7 @@ export interface PolyglotConfig extends CommonParams {
   cachePath?: string,
   userAgent?: string,
   cacheOptions?: CacheOptions,
+  logLevel?: LogLevel,
 }
 
 export type TranslationMode = 'sync' | 'async' | 'fast';
@@ -33,7 +34,7 @@ export interface TranslationParams extends CommonParams {
 type CachedLocalisation = Omit<Localisation, 'stringId'> & { stringId?: string } ;
 
 export class PolyglotClient {
-  private logger = new Logger('PolyglotClient');
+  private logger: Logger;
   private apiUrl = '';
   private readonly baseLanguage = 'en';
   private token = '';
@@ -47,9 +48,18 @@ export class PolyglotClient {
   private cachePath: string = path.join(process.cwd(), 'polyglot-cache.json');
   private userAgent?: string;
 
+  constructor(logLevel: LogLevel = LogLevel.INFO) {
+    this.logger = new Logger('PolyglotClient', logLevel);
+  }
+
   async init(config: PolyglotConfig, options?: RequestInit) {
     this.cachePath = config.cachePath ?? this.cachePath;
     this.userAgent = config.userAgent ?? `PolyglotClient/${config.productId}`;
+
+    // Set log level if provided in config
+    if (config.logLevel !== undefined) {
+      this.logger.setLevel(config.logLevel);
+    }
 
     if (this.token) {
       if (config.preload) {
@@ -80,6 +90,14 @@ export class PolyglotClient {
     }
 
     this.logger.info('Initialization was successful!');
+  }
+
+  setLogLevel(level: LogLevel) {
+    this.logger.setLevel(level);
+  }
+
+  getLogLevel(): LogLevel {
+    return this.logger.getLevel();
   }
 
   private async checkDiskCache(): Promise<boolean> {
@@ -283,10 +301,14 @@ export class PolyglotClient {
       (defaultOptions.headers as Record<string, string>)['Content-Type'] = 'application/json';
     }
 
+    this.logger.debug(`Making ${ucMethod} request to ${this.apiUrl}/${path}`);
+
     return fetch(
       `${this.apiUrl}/` + path,
       this.options === undefined ? defaultOptions : Object.assign(defaultOptions, this.options)
     ).then(async (r) => {
+      this.logger.debug(`Received response: ${r.status} ${r.statusText}`);
+
       if (r.ok && r.status >= 200 && r.status < 400) {
         return r.json();
       }
@@ -296,4 +318,4 @@ export class PolyglotClient {
   }
 }
 
-export const polyglotClient = new PolyglotClient();
+export const polyglotClient = new PolyglotClient(LogLevel.INFO);
