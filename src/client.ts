@@ -218,18 +218,17 @@ export class PolyglotClient {
   ): Promise<string | undefined> {
     const finalLanguage = this.languageAliases[language] ?? language;
 
+    const translationFromCache = await this.getTranslationFromCache(finalLanguage, stringId);
+
+    if (translationFromCache) {
+      return translationFromCache;
+    }
+
     if (needToTranslate && finalLanguage === this.baseLanguage) {
       return initString;
     }
 
     const baseStringAsFallback = params?.baseStringAsFallback ?? this.baseStringAsFallback;
-    const translationFromCache = await this.getTranslationFromCache(
-      finalLanguage, stringId
-    );
-
-    if (translationFromCache) {
-      return translationFromCache;
-    }
 
     if (!this.languages.has(finalLanguage)) {
       return baseStringAsFallback ? initString : undefined;
