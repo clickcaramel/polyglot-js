@@ -15,6 +15,7 @@ export interface PolyglotConfig extends CommonParams {
   token: string,
   productId: string,
   languages: Language[],
+  region: 'us-east-1' | 'eu-north-1',
   preload?: boolean,
   languageAliases?: Partial<Record<Language, Language>>,
   apiUrl?: string,
@@ -74,7 +75,8 @@ export class PolyglotClient {
     this.languageAliases = config.languageAliases ?? {};
     this.languages = new Set(config.languages);
     this.baseStringAsFallback = config.baseStringAsFallback ?? true;
-    this.apiUrl = config.apiUrl ?? 'https://api.polyglot.rocks';
+    const regionPrefix = config.region === 'us-east-1' ? '' : (config.region + '.');
+    this.apiUrl = config.apiUrl ?? `https://api.${regionPrefix}polyglot.rocks`;
     this.options = options;
 
     if (!await this.checkDiskCache()) {
