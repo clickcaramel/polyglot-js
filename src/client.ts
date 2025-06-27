@@ -44,10 +44,12 @@ export class PolyglotClient {
   private baseStringAsFallback = true;
   private cache: Record<string, CachedLocalisation> = {};
   private cacheFromDb!: Promise<Record<string, CachedLocalisation>>;
+  private cacheSavedToDiskPromise: Promise<void> = Promise.resolve();
   private languageAliases!: Partial<Record<Language, Language>>;
   private options?: RequestInit;
   private cachePath: string = path.join(process.cwd(), 'polyglot-cache.json');
   private userAgent?: string;
+  private cacheOptions?: CacheOptions;
 
   constructor(logLevel: LogLevel = LogLevel.INFO) {
     this.logger = new Logger('PolyglotClient', logLevel);
@@ -77,6 +79,7 @@ export class PolyglotClient {
     this.baseStringAsFallback = config.baseStringAsFallback ?? true;
     const regionPrefix = config.region === 'us-east-1' ? '' : (config.region + '.');
     this.apiUrl = config.apiUrl ?? `https://api.${regionPrefix}polyglot.rocks`;
+    this.cacheOptions = config.cacheOptions;
     this.options = options;
 
     if (!await this.checkDiskCache()) {
@@ -102,6 +105,11 @@ export class PolyglotClient {
     return this.logger.getLevel();
   }
 
+  async waitTillCacheSavedToDisk() {
+    await this.downloadTranslationsIfNeed(this.cacheOptions);
+    await this.cacheSavedToDiskPromise;
+  }
+
   private async checkDiskCache(): Promise<boolean> {
     try {
       await fs.promises.access(this.cachePath, fs.constants.F_OK);
@@ -113,7 +121,7 @@ export class PolyglotClient {
 
   private async downloadTranslationsIfNeed(cacheOptions?: CacheOptions) {
     if (this.cacheFromDb !== undefined) {
-      return;
+      return this.cacheFromDb;
     }
 
     this.logger.info('Checking for cached translations on disk');
@@ -140,7 +148,7 @@ export class PolyglotClient {
               return acc;
             }, {});
 
-            fs.promises.writeFile(this.cachePath, JSON.stringify(cache))
+            this.cacheSavedToDiskPromise = fs.promises.writeFile(this.cachePath, JSON.stringify(cache))
               .then(() => this.logger.info('Cache saved to disk'))
               .catch((error) => this.logger.error('Failed to save cache to disk', error));
 
@@ -150,6 +158,8 @@ export class PolyglotClient {
             (e) => (this.logger.error('Failed to get translations', e), {})
           );
       });
+
+    return this.cacheFromDb;
   }
 
   async hasTranslation(
