@@ -15,7 +15,7 @@ function clearDb(strings: string[]) {
 describe('PolyglotClient', () => {
   const token = 'f233f89a-7868-4e53-854c-9fa60f5b283e';
   const languages: Partial<Language>[] = ['en', 'pt-BR', 'ru'];
-  const apiUrl = 'https://api.dev.polyglot.rocks';
+  const apiUrl = 'https://api.eu-north-1.polyglot.rocks';
 
   beforeAll(async () => {
     await Promise.all(fs.readdirSync('/tmp').map(async (file) => {
@@ -30,6 +30,7 @@ describe('PolyglotClient', () => {
       languageAliases: { 'pt': 'pt-BR', },
       apiUrl,
       cachePath: '/tmp/polyglot-cache-1.json',
+      region: 'eu-north-1',
     });
   });
 
@@ -40,6 +41,7 @@ describe('PolyglotClient', () => {
       productId,
       languages,
       cachePath: '/tmp/polyglot-cache-2.json',
+      region: 'eu-north-1',
     })).rejects.toThrow();
   });
 
@@ -73,6 +75,7 @@ describe('PolyglotClient', () => {
       preload: true,
       apiUrl,
       cachePath: '/tmp/polyglot-cache-2.json',
+      region: 'eu-north-1',
     });
 
     expect(await testClient.getTranslationFromCache('ru', secStrId)).toBe('Поделиться');
@@ -85,6 +88,7 @@ describe('PolyglotClient', () => {
       preload: true,
       apiUrl,
       cachePath: '/tmp/polyglot-cache-2.json',
+      region: 'eu-north-1',
     });
     expect(await diskCacheClient.getTranslationFromCache('ru', secStrId)).toBe('Поделиться');
   });

@@ -220,6 +220,17 @@ export class PolyglotClient {
     );
   }
 
+  private setTranslationInMemoryCache(
+    language: Language,
+    stringId: string,
+    value: string,
+  ) {
+    const cached = this.cache[stringId] ?? { translations: {} };
+
+    cached.translations[language] = { value };
+    this.cache[stringId] = cached;
+  }
+
   private async doGetOrTranslate(
     needToTranslate: boolean,
     language: Language,
@@ -257,14 +268,16 @@ export class PolyglotClient {
       const translation = getResponse?.translation;
 
       if (translation) {
-        this.cache[stringId] = {
-          translations: {
-            [finalLanguage]: { value: translation },
-          }
-        };
+        this.setTranslationInMemoryCache(finalLanguage, stringId, translation);
       }
 
-      return translation ?? (baseStringAsFallback ? initString : undefined);
+      const fallback = baseStringAsFallback ? initString : undefined;
+
+      if (translation === undefined && fallback !== undefined) {
+        this.setTranslationInMemoryCache(finalLanguage, stringId, fallback);
+      }
+
+      return translation ?? fallback;
     }
 
     this.logger.info(`Getting auto-translations for ${stringId}`);
@@ -284,7 +297,13 @@ export class PolyglotClient {
     ) as Localisation | undefined;
 
     if (response === undefined) {
-      return baseStringAsFallback ? initString : undefined;
+      const fallback = baseStringAsFallback ? initString : undefined;
+
+      if (fallback !== undefined) {
+        this.setTranslationInMemoryCache(finalLanguage, stringId, fallback);
+      }
+
+      return fallback;
     }
 
     delete (response as CachedLocalisation).stringId;
@@ -321,7 +340,11 @@ export class PolyglotClient {
       this.logger.debug(`Received response: ${r.status} ${r.statusText}`);
 
       if (r.ok && r.status >= 200 && r.status < 400) {
-        return r.json();
+        this.logger.debug('Parsing response');
+        return r.json().catch((e) => {
+          this.logger.error('Failed to parse response', e);
+          throw e;
+        });
       }
 
       throw new Error(`Invalid response: ${r.status} ${await r.text()}`);
